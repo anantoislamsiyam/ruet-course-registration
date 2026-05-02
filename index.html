@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RUET Course Registration Form Generator</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<!-- Loading overlay -->
+<div id="loadOverlay">
+  <div class="spinner"></div>
+  <span id="loadMsg">Loading courses…</span>
+</div>
+
+<!-- Toast notification -->
+<div id="toastContainer" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:999999;display:flex;flex-direction:column;gap:10px;align-items:center;pointer-events:none;"></div>
+
+<!-- Top controls -->
+  <div class="top-controls">
+    <div class="ctrl-pill" data-bs-toggle="modal" data-bs-target="#infoModal">
+      <span class="ctrl-desktop-icon"><i class="bi bi-info-circle" style="font-size:18px;color:var(--text-primary)"></i></span>
+      <span class="ctrl-label" style="min-width:auto">Info</span>
+      <span class="ctrl-icon-only"><i class="bi bi-info-circle"></i></span>
+    </div>
+    <div class="ctrl-pill" onclick="cycleTheme()">
+      <div class="theme-switch">
+        <input type="checkbox" id="themeToggle">
+        <label for="themeToggle" class="slider" onclick="event.preventDefault()"></label>
+      </div>
+      <span class="ctrl-label" id="themeLabel">Light</span>
+      <!-- Mobile icon only: sun for light, moon for dark -->
+      <span class="ctrl-icon-only" id="themeIconMobile"><i class="bi bi-sun-fill" style="color:#f39c12"></i></span>
+    </div>
+  </div>
+    </div>
+  </div>
+
+<header>
+  <div><img src="c-logo.png" alt="RUET Logo" style="width:120px;margin-bottom:10px;" onerror="this.style.display='none'"></div>
+  <div class="text-center mb-4">
+    <h1 class="header-title">RUET Course Registration Form Generator</h1>
+    <p class="text-muted">Generate your course registration form in the official format of RUET</p>
+  </div>
+</header>
+
+<div class="container">
+<div class="glass-box">
+
+  <!-- ===================== FORM ===================== -->
+  <!-- Student Info -->
+  <div class="form-section">
+    <h5 class="mb-3"><i class="bi bi-person-badge me-2"></i>Student Information</h5>
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Department</label>
+        <div class="field-wrap">
+          <input type="text" id="deptInput" class="form-control" placeholder="e.g., Mechanical Engineering"
+            autocomplete="off" oninput="onDeptInput(this)" onfocus="onDeptFocus(this)">
+          <div class="ac-box" id="deptBox"></div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Roll No</label>
+        <input type="text" id="rollInput" class="form-control" placeholder="e.g., 2302001">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Registration No. with Session</label>
+        <input type="text" id="regInput" class="form-control" placeholder="e.g., 301/2023-2024">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold">Name</label>
+        <input type="text" id="nameInput" class="form-control" placeholder="Your full name">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Academic Session with Semester</label>
+        <div class="field-wrap">
+          <input type="text" id="sessionInput" class="form-control" placeholder="e.g., 2nd Year Odd Semester"
+            autocomplete="off" oninput="onSessionInput(this)" onfocus="onSessionFocus(this)"
+            style="cursor:text">
+          <div class="ac-box" id="sessionBox"></div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label fw-semibold">Previously Earned Credit</label>
+        <input type="text" id="prevCreditInput" class="form-control" placeholder="e.g., 39.50">
+      </div>
+    </div>
+
+    <!-- Load Courses Banner -->
+    <div class="load-banner">
+      <i class="bi bi-lightning-charge-fill" style="font-size:22px;color:#f39c12;flex-shrink:0"></i>
+      <div class="load-banner-text">
+        <strong>Auto-fill Courses:</strong> Select your department &amp; semester above, then click to load all courses for that semester automatically.
+      </div>
+      <button type="button" class="btn-load" onclick="loadCoursesForSemester()">
+        <i class="bi bi-cloud-download"></i> Load Courses
+      </button>
+    </div>
+  </div>
+
+  <!-- Courses Section -->
+  <div class="form-section">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <h5 class="mb-0"><i class="bi bi-book me-2"></i>Courses to Register</h5>
+    </div>
+
+    <!-- Desktop Table -->
+    <div class="courses-table-container">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead>
+            <tr>
+              <th width="19%">Course No.</th>
+              <th width="55%">Course Title</th>
+              <th width="14%">Credit</th>
+              <th width="12%">Action</th>
+            </tr>
+          </thead>
+          <tbody id="courseRows"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Mobile Cards -->
+    <div class="courses-cards-container" id="courseCards"></div>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+      <button type="button" onclick="addCourse()" class="btn-add-course mt-2 mt-md-0">
+        <i class="bi bi-plus-circle"></i> Add Course
+      </button>
+    </div>
+
+    <div class="total-bar">
+      <span style="font-size:16px;font-weight:600">Total Credit:</span>
+      <span class="total-val" id="totalCredit">0.00</span>
+    </div>
+  </div>
+
+  <!-- Backlog -->
+  <div class="form-section">
+    <h5 class="mb-3"><i class="bi bi-exclamation-triangle me-2"></i>Backlog Courses</h5>
+    <label class="form-label fw-semibold">Course No. of Backlog Courses (if any)</label>
+    <textarea id="backlogInput" class="form-control" rows="3"
+      oninput="autoResizeTextarea(this)"
+      onblur="formatBacklogDisplay(this)"
+      placeholder="e.g., Math 1121, Chem 1121, Phy 1122 (comma separated)"></textarea>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="d-flex gap-3 justify-content-center flex-wrap mb-2">
+    <button type="button" onclick="previewPDF()" class="btn-primary-custom">
+      <i class="bi bi-eye me-1"></i> Preview PDF
+    </button>
+    <button type="button" onclick="downloadPDF()" class="btn-success-custom">
+      <i class="bi bi-download me-1"></i> Download PDF
+    </button>
+  </div>
+
+  <!-- PDF Preview (desktop only) -->
+  <div class="form-section mt-4 d-none d-lg-block">
+    <h5 class="mb-3"><i class="bi bi-file-pdf me-2"></i>Live Preview</h5>
+    <iframe id="pdfFrame"></iframe>
+  </div>
+
+</div><!-- glass-box -->
+</div><!-- container -->
+
+<!-- Info Modal -->
+<div class="modal fade" id="infoModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-info-circle me-2"></i>About This Tool</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="info-section">
+          <h5><i class="bi bi-file-earmark-text me-2"></i>About</h5>
+          <p>This is a specialized web application designed specifically for students of Rajshahi University of Engineering & Technology (RUET) to generate their course registration forms in the official university format. <br> The tool automates the process of creating registration forms, ensuring compliance with RUET's official formatting requirements while providing an intuitive and user-friendly interface.</p>
+        </div>
+        <div class="info-section">
+          <h5><i class="bi bi-stars me-2"></i>Features</h5>
+          <ul>
+            <li><strong>Auto-load Courses:</strong> Select dept &amp; semester → click Load Courses to fill the table instantly</li>
+            <li><strong>Smart Auto complete:</strong> Search courses by code or title with keyboard navigation</li>
+            <li><strong>Easy Course Management:</strong> Add or remove courses with single clicks</li>
+            <li><strong>Total Credit:</strong> Auto-calculated as you add/remove courses</li>
+            <li><strong>PDF Preview &amp; Download:</strong> Real-time preview on desktop, download on all devices</li>
+            <li><strong>Official Format:</strong> Matches RUET's official LEGAL-size registration form exactly</li>
+            <li><strong>Dark / Light / System theme</strong> with persistent preference</li>
+          </ul>
+        </div>
+        <div class="info-section">
+          <h5><i class="bi bi-person-badge me-2"></i>Developer</h5>
+          <div class="dev-card">
+            <p><strong>Md. Ananto Islam Siyam</strong></p>
+            <p>23 Series &mdash; Department of Mechanical Engineering</p>
+            <p>Rajshahi University of Engineering &amp; Technology (RUET)</p>
+          </div>
+        </div>
+        <div class="footer-note">
+          <p><strong>Property of RUET MechaVerse</strong></p>
+          <p>Visit: <a href="https://mechaverse.great-site.net/" target="_blank" class="ruet-link">mechaverse.great-site.net</a></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <a href="https://mechaverse.great-site.net/" target="_blank" class="btn btn-primary">
+          <i class="bi bi-box-arrow-up-right me-2"></i>Visit MechaVerse
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="script.js"></script>
+</html>
