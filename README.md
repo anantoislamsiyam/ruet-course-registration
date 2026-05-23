@@ -1,1 +1,0 @@
-# ruet-course-registration
